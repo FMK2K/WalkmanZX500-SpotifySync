@@ -1,0 +1,33 @@
+# Walkman Sync Agent — runtime dependencies
+# Rev 14.9.8 (MK17 Part A + Part B)
+#
+# Install with: pip install -r requirements.txt
+#
+# Note: pywin32, pywinauto, comtypes are Windows-only and silently
+# skip on other platforms — the codebase is Windows-targeting but
+# importable on Linux/macOS for static analysis and CI.
+
+# ── Core (cross-platform) ─────────────────────────────────────────
+mutagen>=1.45,<2.0          # ID3 / FLAC tag I/O
+spotipy>=2.22,<3.0          # Spotify Web API client (online mode)
+requests>=2.28,<3.0         # HTTP client used by genre/cover lookups
+python-dotenv>=1.0,<2.0     # .env loading
+Pillow>=10.0,<12.0          # cover-art normalisation (baseline JPEG, RGB, ≤500x500)
+
+# ── Download providers ────────────────────────────────────────────
+yt-dlp>=2024.3.10           # primary download fallback
+tidalapi>=0.7,<0.8          # optional TIDAL provider
+
+# ── Windows-only (skip on Linux/macOS) ────────────────────────────
+pywin32>=306; sys_platform == "win32"          # MTP via Shell.Application + COM
+pywinauto>=0.6.8; sys_platform == "win32"      # Win11 dialog dismissal via UIA
+comtypes>=1.4; sys_platform == "win32"         # MTP COM bindings
+
+# ── Optional / platform-conditional ───────────────────────────────
+# playwright is used by some download providers but only optionally;
+# install separately with `pip install playwright && playwright install`
+# if you want browser-driven providers.
+
+# MK9 ISSUE-6: pywinauto for reliable UIA Hyperlink clicking in shell dialogs
+pywinauto>=0.6.8
+
