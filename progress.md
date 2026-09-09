@@ -4621,3 +4621,22 @@ P6 completeness  FINAL scoped-fill dry: 281 track(s) (6 absent + 74 partial albu
 DEVICE: 11,390 audio files. Stay-awake reset. ALL AUTOMATED WORK COMPLETE.
 NEXT (user): DB "Update database" rescan -> Claude runs re-star (restar_merged.json,
 260) -> user spot-checks (Marvin Gaye order, NOIR/IGOR, Late Reg=21, stars, playlist).
+
+--- cont.51 (2026-09-08): src/ reorganization + git ---
+Flat 488-item dir -> git repo, Algochains layout. 2 commits: ef63d46 snapshot,
+1f547dd reorg (234 renames = history preserved).
+LAYOUT: run.py | src/ (120 .py) | tests/ (84 + conftest) | state/ (runtime JSON,
+gitignored) | outputs/reports/ | docs/ | logs/ data/ archive/ (gitignored) |
+task_plan/progress/findings.md at root.
+PATH PLUMBING: config.py PROJECT_ROOT/SRC_DIR/STATE_DIR/etc; BASE_DIR=STATE_DIR
+(38 refs repointed in 1 line); .env from repo root; SPOTIFY_LOCAL_DATA_PATH ->
+data/spotify_account_data. 14 tool ROOT= -> <repo>/state (self-contained). 6 more
+__file__.parent state sites + 4 bare-relative sites -> <repo>/state.
+spiral._run_tool + cli_runner run-tool + main.py x3 Popen -> cwd=SRC_DIR + abs
+script paths. main.py open-folder/config-edit/startup_error re-rooted.
+VERIFIED HEADLESS: GUI 93 buttons (== baseline); curate matrix 12 stages;
+delegators run via python src/cli_runner.py run-tool <script> cwd=src/, state in
+state/ not src/; GUI->subprocess rc=0; pytest collects 1341 (24 pre-existing
+ad-hoc errors); .env+keys load. .git = 3.1M after gc.
+DEFERRED: live GUI click-through (Walkman disconnected). User: python run.py ->
+Album order+dupes dry-run + CURATE dry-run + one real dry-run stage.

@@ -77,4 +77,33 @@ claude mcp add gbrain -- gbrain serve
 
 ---
 
+## Repository Layout (2026-09-08 src/ reorg)
+
+```
+run.py            # launcher — puts src/ on sys.path, calls main.main()
+src/              # all ~120 application modules, FLAT-imported (import config,
+                  #   import walkman_dedup as wd, ...). NOT a package to import
+                  #   from; src/ goes on sys.path via run.py / conftest / the
+                  #   script's own dir when run directly.
+tests/            # 84 test_*.py + conftest.py (adds src/ to path; run: pytest tests/)
+state/            # ALL runtime JSON/db/lock state — gitignored. config.BASE_DIR
+                  #   points here; `config.BASE_DIR / "x.json"` == state/x.json.
+outputs/reports/  # generated HTML/JSON reports
+docs/             # SDDs (+ sdd_history/), planning docs
+logs/  data/  archive/   # gitignored: logs, Spotify exports, snapshot zips + HiRes decompile
+task_plan.md progress.md findings.md   # planning-with-files, stay at root
+```
+
+**Path rules for any new code in `src/`:** state/output files go to
+`config.STATE_DIR` / `config.REPORTS_DIR` (or `config.BASE_DIR` for state),
+never `Path(__file__).parent`. Subprocess launches of sibling scripts use
+`cwd=config.SRC_DIR`. `config.PROJECT_ROOT` is the repo root.
+
+**Running things:** GUI = `python run.py`. A single curation stage = its
+button in the GUI Tools panel (**🧰 Curation Pipeline — Individual Stages**),
+or `python src/cli_runner.py run-tool <script.py> [flags]`. The whole
+pipeline = **🧹 CURATE LIBRARY** or `python src/cli_runner.py curate [--dry-run]`.
+
+---
+
 ## Waterfall Process: The Handoff

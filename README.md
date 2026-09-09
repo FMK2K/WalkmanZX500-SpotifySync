@@ -3365,3 +3365,97 @@ marked done.
 *End of Part X. Engineering detail, the incident timeline, the album_normalize matcher
 iterations, the per-stage dry-run counts from the live run, and the residual open items, is in
 `progress.md` (cont.49-cont.50 plus addenda) and `task_plan.md` (Tasks 36-38).*
+
+---
+
+# Part XI — src/ Reorganization + Git (2026-09-08)
+
+## 91. From a 488-item Flat Directory to a Repo
+
+The project directory had grown to 488 items at one level: 226 `.py` files
+(120 live modules, 84 ad-hoc `test_*.py`, ~23 dead patches/experiments), 47
+runtime-state JSONs, 39 "EntireCodebase" snapshot zips (45 MB), ~120 MB of
+Spotify exports + a decompiled HiRes player, 254 MB of logs, and no version
+control. It is now a git repo with an Algochains-style layout:
+
+```
+run.py                 launcher: puts src/ on sys.path, calls main.main()
+.gitignore .gitattributes
+requirements.txt  README.md  CLAUDE.md
+task_plan.md progress.md findings.md      (planning-with-files, at root)
+src/     120 .py — flat-imported app modules
+tests/   84 test_*.py + conftest.py
+state/   all runtime JSON/db/lock  (gitignored)
+outputs/reports/   generated HTML/JSON
+docs/    SDDs (+ sdd_history/), planning docs
+logs/  data/  archive/    (gitignored: logs, Spotify exports, snapshot zips, HiRes decompile)
+```
+
+`git init` produced two commits: a pre-reorg snapshot, then the reorg itself
+(234 files moved as renames, so history is preserved).
+
+## 92. The One Real Risk — Path Plumbing
+
+The 120 modules use flat imports (`import config`) and wrote state via
+`Path(__file__).parent / "x.json"`. After the move to `src/` that would have
+written to `src/`. Fixes:
+
+- **`config.py`** gained `PROJECT_ROOT / SRC_DIR / STATE_DIR / OUTPUT_DIR /
+  REPORTS_DIR / LOG_DIR / DATA_DIR`. **`BASE_DIR` was redefined to
+  `STATE_DIR`** — one line that repointed all 38 `config.BASE_DIR / "*.json"`
+  references at `state/`. `.env` now loads from the repo root;
+  `SPOTIFY_LOCAL_DATA_PATH` points at `data/spotify_account_data/`.
+- **The 14 tool scripts** that had `ROOT = Path(__file__).parent` now use
+  `ROOT = Path(__file__).resolve().parent.parent / "state"` (self-contained,
+  no import needed) — they write `cover_fill_state.json`,
+  `album_normalize_tagfix_state.json`, `duration_verify_report.json`,
+  `mislabel_redownload_pending.json`, etc. there.
+- **6 more `Path(__file__).parent` state sites** (`device_library`,
+  `mk37_wiring` ×3, `mk35_policy`, `walkman_tree_gen`) and **4 bare-relative
+  sites** (`adb_transfer` lock, `deferred_transfers`, `mk35_pure_replay`,
+  `mk37_2_renewal`) → `<repo>/state`.
+- **Subprocess launches** — `spiral_orchestrator._run_tool`,
+  `cli_runner.py`'s `run-tool` delegator, and `main.py`'s 3 `Popen` sites —
+  now run with `cwd=config.SRC_DIR` and reference scripts by absolute
+  `src/` path, so a child's own `import config` resolves.
+- **`main.py`** — "Open project folder" opens `PROJECT_ROOT`; the config-flag
+  editor writes `SRC_DIR / "config.py"`; `startup_error.txt` → `PROJECT_ROOT`.
+
+## 93. Verified (headless — the Walkman was disconnected for the live pass)
+
+- GUI constructs: **93 buttons**, identical to the pre-reorg baseline;
+  `_STAGE_MATRIX['curate']` intact at 12 stages (incl. `duration_verify`,
+  `album_normalize`).
+- Every `run-tool` delegator runs via `python src/cli_runner.py run-tool
+  <script>` (`cwd=src/`): state is read from and written to `state/`, and
+  **nothing leaked into `src/`**.
+- The exact GUI → subprocess path (`_run_cli_mode`'s `Popen`) returns rc 0.
+- `pytest tests/ --co` collects **1341 tests** (24 pre-existing
+  ad-hoc-script collection errors — `SystemExit`, missing relative files —
+  none of them import-path failures).
+- `.env` + API keys load from the repo root.
+- `.git` is 3.1 MB (state, logs, data, archive, tools, venvs all gitignored).
+
+**Deferred:** the live click-through — launch `python run.py`, run **Album
+order + dupes (dry-run)**, **🧹 CURATE LIBRARY** with Dry-run on, and one
+real dry-run stage against the reconnected device.
+
+## 94. Per-Module Reference (Part XI)
+
+| File | Change |
+|---|---|
+| `run.py` | NEW — `sys.path` shim + `from main import main` |
+| `src/__init__.py` | NEW — empty package marker |
+| `tests/conftest.py` | NEW — puts `src/` on `sys.path` for pytest |
+| `.gitignore` `.gitattributes` | NEW |
+| `src/config.py` | `PROJECT_ROOT`/`SRC_DIR`/`STATE_DIR`/…; `BASE_DIR = STATE_DIR`; `.env` from root; Spotify data path → `data/` |
+| `src/spiral_orchestrator.py` | `_run_tool` `cwd=SRC_DIR` |
+| `src/cli_runner.py` | `run-tool` delegator `cwd=SRC_DIR` |
+| `src/main.py` | 3 `Popen` sites `cwd=SRC_DIR` + absolute script paths; project-folder / config-edit / crash-log paths re-rooted |
+| 14 tool scripts + 10 other modules | `ROOT`/state paths → `<repo>/state` |
+
+---
+
+*End of Part XI. The move manifest, the full path-plumbing diff, and the
+headless verification transcript are in `progress.md` and the approved plan
+(`.claude/plans/`).*
