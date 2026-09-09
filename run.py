@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """SpotifyTuner — GUI launcher.
 
 The application code lives in ``src/`` (flat-imported: ``import config``,

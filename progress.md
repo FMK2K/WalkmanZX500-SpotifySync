@@ -4640,3 +4640,17 @@ state/ not src/; GUI->subprocess rc=0; pytest collects 1341 (24 pre-existing
 ad-hoc errors); .env+keys load. .git = 3.1M after gc.
 DEFERRED: live GUI click-through (Walkman disconnected). User: python run.py ->
 Album order+dupes dry-run + CURATE dry-run + one real dry-run stage.
+
+--- cont.52 (2026-09-09): run.py launch fix ---
+SYMPTOM: VS Code Code Runner ran `/usr/bin/env python3 "...run.py"` -> "The system
+cannot find the path specified" (exit 1). Cause: run.py line 1 was a new
+`#!/usr/bin/env python3` shebang; Code Runner's respectShebang (default true)
+honored it, and /usr/bin/env + `python3` don't exist on Windows.
+FIX: deleted the shebang line from run.py (Windows-only Tk launcher, shebang was
+cargo). Code Runner now falls back to `python -u run.py`.
+RUNTIME INTERPRETER = anaconda BASE (C:\Users\FeisalK\anaconda3\python.exe) — has
+spotipy/mutagen/pywinauto. NOT .venv_spotiflac (isolated spotiflac-3.8.0 sandbox,
+no spotipy) and NOT conda env spotify2mp3_env (no spotipy).
+VERIFIED: `anaconda3\python.exe run.py` -> full import chain OK + GUI mainloop
+stays up 8s clean (only the benign pywinauto STA-COM UserWarning). Post-reorg
+launch confirmed working. Live device click-through still deferred (Walkman off).
